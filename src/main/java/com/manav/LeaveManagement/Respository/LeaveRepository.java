@@ -15,4 +15,5 @@ import java.util.List;
 @Repository
 public interface LeaveRepository extends CrudRepository<Leave, Integer>{
     List<Leave> findByEmployee(String employee);
+    List<Leave> findByDateAndEmployee(String date, String employee);
 }

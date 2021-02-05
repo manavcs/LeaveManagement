@@ -4,6 +4,6 @@ import java.util.Date;
 
 public class CancelLeaveRequest {
     public String employee;
-    public Date fromDate;
-    public Date toDate;
+    public String fromDate;
+    public String toDate;
 }
