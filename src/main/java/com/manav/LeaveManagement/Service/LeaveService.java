@@ -37,16 +37,16 @@ public class LeaveService {
             return new ApplyLeaveResponse(false, "Invalid leaves");
         }
 
-        var leaveStatus = getLeaveStatus(noOfDays);
-
-        var leaves = new ArrayList<Leave>();
-
         var existingLeaves = leaveRepository.findByEmployee(employee);
         var map = new HashMap<String, Boolean>();
         for(Leave lv:existingLeaves)
         {
             map.put(lv.date + lv.employee, true);
         }
+
+        var today = utils.getStringFromDate(new Date());
+
+        var leaves = new ArrayList<Leave>();
 
         for(int i = 0; i< noOfDays; i++)
         {
@@ -58,7 +58,12 @@ public class LeaveService {
             }
 
             var leave = new Leave(manager, employee, date, "");
-            leave.setStatus(leaveStatus);
+
+            var daysRemaining = utils.getNoOfDays(today,date) -1;
+
+            var status = getLeaveStatus(daysRemaining);
+
+            leave.setStatus(status);
 
             leaves.add(leave);
         }
@@ -128,7 +133,7 @@ public class LeaveService {
     }
 
     private LeaveStatus getLeaveStatus (long noOfDays) {
-        if(noOfDays >= 7)
+        if(noOfDays > 7)
         {
             return LeaveStatus.Approved;
         }
