@@ -1,9 +1,6 @@
 package com.manav.LeaveManagement.Controller;
 
-import com.manav.LeaveManagement.Model.ApplyLeaveRequest;
-import com.manav.LeaveManagement.Model.ApplyLeaveResponse;
-import com.manav.LeaveManagement.Model.CancelLeaveRequest;
-import com.manav.LeaveManagement.Model.CancelLeaveResponse;
+import com.manav.LeaveManagement.Model.*;
 import com.manav.LeaveManagement.Service.LeaveService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -30,6 +27,22 @@ public class LeaveController {
     {
         var res = leaveService.cancelLeaves(
                 request.employee, request.fromDate, request.toDate);
+
+        return res;
+    }
+
+    @GetMapping("/pending")
+    public Object[] pendingLeave(String employee)
+    {
+        var res = leaveService.getTotalPendingLeaves(employee);
+
+        return res;
+    }
+
+    @GetMapping("/approved")
+    public Object[] approvedLeave(String employee)
+    {
+        var res = leaveService.getTotalApprovedLeaves(employee);
 
         return res;
     }

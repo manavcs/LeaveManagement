@@ -105,26 +105,26 @@ public class LeaveService {
         }
     }
 
-    public long getTotalPendingLeaves(String employee)
+    public Object[] getTotalPendingLeaves(String employee)
     {
         var leaves = this.leaveRepository.findByEmployee(employee);
 
         var pending = leaves.stream()
                 .filter(l->l.getStatus() == LeaveStatus.PendingForApproval)
-                .count();
+                .toArray();
 
         return pending;
     }
 
-    public long getTotalApprovedLeaves(String employee)
+    public Object[] getTotalApprovedLeaves(String employee)
     {
         var leaves = this.leaveRepository.findByEmployee(employee);
 
-        var pending = leaves.stream()
+        var approved = leaves.stream()
                 .filter(l->l.getStatus() == LeaveStatus.Approved)
-                .count();
+                .toArray();
 
-        return pending;
+        return approved;
     }
 
     private LeaveStatus getLeaveStatus (long noOfDays) {
