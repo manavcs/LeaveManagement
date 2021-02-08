@@ -2,6 +2,8 @@ package com.manav.LeaveManagement.Service;
 
 import com.manav.LeaveManagement.Model.ApplyLeaveResponse;
 import com.manav.LeaveManagement.Model.CancelLeaveResponse;
+import com.manav.LeaveManagement.Model.Exception.LeaveAlreadyExistException;
+import com.manav.LeaveManagement.Model.Exception.LeaveValidationException;
 import com.manav.LeaveManagement.Model.Leave;
 import com.manav.LeaveManagement.Model.LeaveStatus;
 import com.manav.LeaveManagement.Respository.LeaveRepository;
@@ -9,8 +11,6 @@ import com.manav.LeaveManagement.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.text.ParseException;
-import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -23,19 +23,15 @@ public class LeaveService {
     @Autowired
     private Utils utils;
 
-    public ApplyLeaveResponse applyLeave(String manager, String employee, String fromDate, String toDate){
+    public ApplyLeaveResponse applyLeave(String manager, String employee, String fromDate, String toDate)
+            throws LeaveValidationException, LeaveAlreadyExistException {
 
         var noOfDays = utils.getNoOfDays(fromDate, toDate);
 
         System.out.println(String.format("Applying %d day leave by %s to %s",
                 noOfDays, employee, manager));
 
-        var valid = validateLeaves(manager, employee, fromDate, toDate);
-
-        if(!valid || noOfDays < 1)
-        {
-            return new ApplyLeaveResponse(false, "Invalid leaves");
-        }
+        validateLeaves(manager, employee, fromDate, toDate, noOfDays);
 
         var existingLeaves = leaveRepository.findByEmployee(employee);
         var map = new HashMap<String, Boolean>();
@@ -44,27 +40,10 @@ public class LeaveService {
             map.put(lv.date + lv.employee, true);
         }
 
-        var today = utils.getStringFromDate(new Date());
-
         var leaves = new ArrayList<Leave>();
 
-        for(int i = 0; i< noOfDays; i++)
-        {
-            var date = utils.addDays(fromDate, i);
-
-            if(map.containsKey(date + employee))
-            {
-                return new ApplyLeaveResponse(false, "One or more leave already exists");
-            }
-
-            var leave = new Leave(manager, employee, date, "");
-
-            var daysRemaining = utils.getNoOfDays(today,date) -1;
-
-            var status = getLeaveStatus(daysRemaining);
-
-            leave.setStatus(status);
-
+        for(int i = 0; i< noOfDays; i++) {
+            Leave leave = createLeave(manager, employee, fromDate, map, i);
             leaves.add(leave);
         }
 
@@ -132,6 +111,29 @@ public class LeaveService {
         return approved;
     }
 
+    private Leave createLeave(String manager, String employee, String fromDate,
+                              HashMap<String, Boolean> map, int i) throws LeaveAlreadyExistException {
+
+        var today = utils.getStringFromDate(new Date());
+
+        var date = utils.addDays(fromDate, i);
+
+        if(map.containsKey(date + employee))
+        {
+            throw new LeaveAlreadyExistException(String.format("{0}:{0}", employee, date));
+        }
+
+        var leave = new Leave(manager, employee, date, "");
+
+        var daysRemaining = utils.getNoOfDays(today,date) -1;
+
+        var status = getLeaveStatus(daysRemaining);
+
+        leave.setStatus(status);
+
+        return leave;
+    }
+
     private LeaveStatus getLeaveStatus (long noOfDays) {
         if(noOfDays > 7)
         {
@@ -142,29 +144,35 @@ public class LeaveService {
         }
     }
 
-    private boolean validateLeaves(String manager, String employee, String frmDate, String tDate) {
+    private boolean validateLeaves(String manager, String employee, String frmDate, String tDate, long noOfDays) throws LeaveValidationException {
 
         var fromDate = utils.getDateFromString(frmDate);
         var toDate = utils.getDateFromString(tDate);
+
+        if(noOfDays <1)
+        {
+            System.out.println("Invalid leave!");
+            throw new LeaveValidationException("Invalid leave!");
+        }
 
         if(manager == null || manager.isEmpty() ||
                 employee == null || employee.isEmpty()
                 || fromDate == null || tDate == null)
         {
             System.out.println("Invalid leave!");
-            return false;
+            throw new LeaveValidationException("Invalid leave!");
         }
 
         if(fromDate.after(toDate))
         {
             System.out.println("from date in a leave can not be greater than to date");
-            return false;
+            throw new LeaveValidationException("from date in a leave can not be greater than to date");
         }
 
         if(fromDate.before(new Date()))
         {
             System.out.println("Leaves can not be applied to past dates");
-            return false;
+            throw new LeaveValidationException("Leaves can not be applied to past dates");
         }
 
         return true;
